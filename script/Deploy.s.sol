@@ -40,8 +40,11 @@ contract DeployPOIPOI is Script {
 
         // Step 2: Deploy Gold Price Oracle
         console.log("\n2. Deploying Gold Price Oracle...");
-        goldOracle = new GoldPriceOracle();
+        // For now, deploy with mock price (address(0) = mock mode)
+        // To use live prices, replace address(0) with Chainlink price feed address
+        goldOracle = new GoldPriceOracle(address(0));
         console.log("GoldPriceOracle deployed at:", address(goldOracle));
+        console.log("Using mock price mode. To enable live prices, call setGoldPriceFeed()");
 
         // Step 3: Deploy POIPOI Token (with temporary manager address)
         console.log("\n3. Deploying POIPOI Token...");
@@ -139,7 +142,7 @@ contract DeployPOIPOI is Script {
 
         // Deploy contracts locally
         collateralToken = new MockCollateralToken();
-        goldOracle = new GoldPriceOracle();
+        goldOracle = new GoldPriceOracle(address(0)); // Mock mode for testing
         poiToken = new POIPOI(address(this)); // Use this as temporary manager
         manager = new POIPOIManager(address(poiToken), address(goldOracle), address(collateralToken));
 

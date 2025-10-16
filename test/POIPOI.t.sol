@@ -45,7 +45,7 @@ contract POIPOITest is Test {
 
         // Deploy contracts
         collateralToken = new MockCollateralToken();
-        goldOracle = new GoldPriceOracle();
+        goldOracle = new GoldPriceOracle(address(0)); // Mock mode for testing
 
         // Deploy POI token with temporary address first
         poiToken = new POIPOI(address(this)); // Use this as temporary manager

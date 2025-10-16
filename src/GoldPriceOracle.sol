@@ -5,6 +5,14 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
+// Chainlink price feed interface
+interface AggregatorV3Interface {
+    function latestRoundData()
+        external
+        view
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);
+}
+
 /**
  * @title GoldPriceOracle
  * @dev Oracle contract for fetching gold price in USD per gram
@@ -26,8 +34,11 @@ contract GoldPriceOracle is Ownable, Pausable, ReentrancyGuard {
     uint256 public constant MAX_PRICE_CHANGE = 1000; // 10% max change per update (1000 = 10%)
 
     // Mock/fallback variables for testing
-    bool public useMockPrice = true; // Set to false when real Chainlink feed is available
+    bool public useMockPrice = false; // Set to false when real Chainlink feed is available
     uint256 public mockPricePerGram = 65000000; // $65 per gram (mock price with 8 decimals)
+
+    // Chainlink price feed for gold (XAU/USD)
+    address public goldPriceFeed;
 
     // Emergency controls
     bool public emergencyStopped = false;
@@ -45,12 +56,22 @@ contract GoldPriceOracle is Ownable, Pausable, ReentrancyGuard {
     }
 
     /**
-     * @dev Constructor initializes with mock price
+     * @dev Constructor initializes with Chainlink price feed or mock price
+     * @param _goldPriceFeed Address of Chainlink gold price feed (0x0 for mock mode)
      */
-    constructor() Ownable(msg.sender) {
-        goldPricePerGram = mockPricePerGram;
-        lastUpdated = block.timestamp;
-        emit PriceUpdated(goldPricePerGram, block.timestamp);
+    constructor(address _goldPriceFeed) Ownable(msg.sender) {
+        goldPriceFeed = _goldPriceFeed;
+
+        if (_goldPriceFeed != address(0)) {
+            useMockPrice = false;
+            // Fetch initial price from Chainlink
+            _updatePriceFromChainlink();
+        } else {
+            useMockPrice = true;
+            goldPricePerGram = mockPricePerGram;
+            lastUpdated = block.timestamp;
+            emit PriceUpdated(goldPricePerGram, block.timestamp);
+        }
     }
 
     /**
@@ -58,7 +79,58 @@ contract GoldPriceOracle is Ownable, Pausable, ReentrancyGuard {
      * @return price Current gold price with 8 decimals
      */
     function getGoldPricePerGram() external view returns (uint256) {
-        return goldPricePerGram;
+        if (useMockPrice) {
+            return goldPricePerGram;
+        } else {
+            // Fetch live price from Chainlink
+            return _getLiveGoldPrice();
+        }
+    }
+
+    /**
+     * @dev Get live gold price from Chainlink (XAU/USD)
+     * @return price Gold price per ounce in USD (8 decimals)
+     */
+    function _getLiveGoldPrice() internal view returns (uint256) {
+        if (goldPriceFeed == address(0)) {
+            return goldPricePerGram; // Fallback to stored price
+        }
+
+        try AggregatorV3Interface(goldPriceFeed).latestRoundData() returns (
+            uint80, int256 answer, uint256, uint256 updatedAt, uint80
+        ) {
+            // Convert from price per ounce to price per gram
+            // 1 ounce = 31.1034768 grams
+            // Price per gram = Price per ounce / 31.1034768
+            uint256 pricePerOunce = uint256(answer);
+            uint256 pricePerGram = (pricePerOunce * 10 ** 8) / 3110347680; // Convert with precision
+
+            return pricePerGram;
+        } catch {
+            return goldPricePerGram; // Fallback to stored price
+        }
+    }
+
+    /**
+     * @dev Update price from Chainlink feed
+     */
+    function _updatePriceFromChainlink() internal {
+        if (goldPriceFeed == address(0)) return;
+
+        try AggregatorV3Interface(goldPriceFeed).latestRoundData() returns (
+            uint80, int256 answer, uint256, uint256 updatedAt, uint80
+        ) {
+            // Convert from price per ounce to price per gram
+            uint256 pricePerOunce = uint256(answer);
+            uint256 newPricePerGram = (pricePerOunce * 10 ** 8) / 3110347680;
+
+            // Update stored price
+            goldPricePerGram = newPricePerGram;
+            lastUpdated = updatedAt;
+            emit PriceUpdated(newPricePerGram, updatedAt);
+        } catch {
+            // Keep existing price if Chainlink fails
+        }
     }
 
     /**
@@ -92,6 +164,26 @@ contract GoldPriceOracle is Ownable, Pausable, ReentrancyGuard {
         lastUpdated = block.timestamp;
 
         emit PriceUpdated(newPrice, block.timestamp);
+    }
+
+    /**
+     * @dev Update price from Chainlink feed (public function)
+     */
+    function updatePriceFromChainlink() external notEmergencyStopped whenNotPaused nonReentrant {
+        require(!useMockPrice, "GoldPriceOracle: Not using Chainlink feed");
+        _updatePriceFromChainlink();
+    }
+
+    /**
+     * @dev Set Chainlink price feed address
+     * @param _priceFeed Address of Chainlink price feed
+     */
+    function setGoldPriceFeed(address _priceFeed) external onlyOwner {
+        goldPriceFeed = _priceFeed;
+        if (_priceFeed != address(0)) {
+            useMockPrice = false;
+            _updatePriceFromChainlink();
+        }
     }
 
     /**
