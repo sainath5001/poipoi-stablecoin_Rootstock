@@ -143,7 +143,10 @@ contract DeployPOIPOI is Script {
         // Deploy contracts locally
         collateralToken = new MockCollateralToken();
         goldOracle = new GoldPriceOracle(address(0)); // Mock mode for testing
-        poiToken = new POIPOI(address(this)); // Use this as temporary manager
+
+        // Create a temporary manager address for testing
+        address tempManager = address(0x1234567890123456789012345678901234567890);
+        poiToken = new POIPOI(tempManager);
         manager = new POIPOIManager(address(poiToken), address(goldOracle), address(collateralToken));
 
         // Update manager

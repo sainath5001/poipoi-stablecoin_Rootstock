@@ -71,3 +71,4 @@ export const formatUSD = (amount) => {
 export const formatPOI = (amount) => {
   return `${parseFloat(amount).toFixed(4)} POI`;
 };
+

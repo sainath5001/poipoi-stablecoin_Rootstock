@@ -69,3 +69,4 @@ const DashboardCard = ({ title, value, subtitle, icon: Icon, trend, loading = fa
 };
 
 export default DashboardCard;
+

@@ -44,3 +44,4 @@ echo "2. Run 'npm run dev' to start the development server"
 echo "3. Open http://localhost:5173 in your browser"
 echo ""
 echo "Happy coding! 🚀"
+

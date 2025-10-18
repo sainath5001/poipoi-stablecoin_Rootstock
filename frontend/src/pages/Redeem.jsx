@@ -318,3 +318,4 @@ const Redeem = () => {
 };
 
 export default Redeem;
+
