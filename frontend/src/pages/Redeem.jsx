@@ -26,7 +26,7 @@ const Redeem = () => {
       const poiTokenContract = getContract('POIPOI', signer);
       
       const [price, balance] = await Promise.all([
-        managerContract.getGoldPrice(),
+        managerContract.getCurrentGoldPrice(), // Fixed: use correct method name
         poiTokenContract.balanceOf(account),
       ]);
       

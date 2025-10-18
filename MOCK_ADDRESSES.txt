@@ -1,0 +1,11 @@
+# Mock Contract Addresses for Testing
+# These are example addresses for testing the frontend
+
+# Copy these addresses to your frontend/.env file:
+
+VITE_POIPOI_TOKEN_ADDRESS=0x1234567890123456789012345678901234567890
+VITE_GOLD_PRICE_ORACLE_ADDRESS=0x2345678901234567890123456789012345678901
+VITE_POIPOI_MANAGER_ADDRESS=0x3456789012345678901234567890123456789012
+
+# Note: These are mock addresses for testing the frontend UI.
+# For real functionality, you need to deploy contracts and use real addresses.

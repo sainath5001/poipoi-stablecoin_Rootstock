@@ -33,8 +33,8 @@ const Dashboard = () => {
       // Fetch data in parallel
       const [balance, goldPrice, totalSupply] = await Promise.all([
         poiTokenContract.balanceOf(account),
-        goldOracleContract.getGoldPrice(),
-        managerContract.getTotalSupply(),
+        goldOracleContract.getGoldPricePerGram(), // Fixed: use correct method name
+        poiTokenContract.totalSupply(), // Fixed: use POI token's totalSupply method
       ]);
 
       setData({

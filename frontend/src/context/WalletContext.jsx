@@ -31,7 +31,9 @@ export const WalletProvider = ({ children }) => {
       try {
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
         if (accounts.length > 0) {
-          await connectWallet();
+          // Only restore connection if user previously connected
+          // Don't automatically connect - let user choose
+          console.log('Previous wallet connection found, but not auto-connecting');
         }
       } catch (error) {
         console.error('Error checking wallet connection:', error);
@@ -67,9 +69,10 @@ export const WalletProvider = ({ children }) => {
       setChainId(Number(network.chainId));
       setIsConnected(true);
 
-      // Check if on correct network
-      if (Number(network.chainId) !== CHAIN_IDS.ROOTSTOCK && Number(network.chainId) !== CHAIN_IDS.ROOTSTOCK_TESTNET) {
-        toast.error('Please switch to Rootstock network');
+      // Check if on correct network (allow local network for testing)
+      const allowedChainIds = [CHAIN_IDS.ROOTSTOCK, CHAIN_IDS.ROOTSTOCK_TESTNET, 31337]; // 31337 is local Anvil
+      if (!allowedChainIds.includes(Number(network.chainId))) {
+        toast.error('Please switch to Rootstock network or local network');
         await switchToRootstock();
       }
 
@@ -84,37 +87,38 @@ export const WalletProvider = ({ children }) => {
 
   const switchToRootstock = async () => {
     try {
+      // Try to switch to local network first (for testing)
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: `0x${CHAIN_IDS.ROOTSTOCK.toString(16)}` }],
+        params: [{ chainId: '0x7A69' }], // 31337 in hex
       });
     } catch (switchError) {
-      // If the chain doesn't exist, add it
+      // If local network doesn't exist, add it
       if (switchError.code === 4902) {
         try {
           await window.ethereum.request({
             method: 'wallet_addEthereumChain',
             params: [
               {
-                chainId: `0x${CHAIN_IDS.ROOTSTOCK.toString(16)}`,
-                chainName: 'Rootstock',
-                rpcUrls: ['https://public-node.rsk.co'],
+                chainId: '0x7A69', // 31337 in hex
+                chainName: 'Local Anvil',
+                rpcUrls: ['http://localhost:8545'],
                 nativeCurrency: {
-                  name: 'RBTC',
-                  symbol: 'RBTC',
+                  name: 'ETH',
+                  symbol: 'ETH',
                   decimals: 18,
                 },
-                blockExplorerUrls: ['https://explorer.rsk.co'],
+                blockExplorerUrls: [],
               },
             ],
           });
         } catch (addError) {
-          console.error('Error adding Rootstock network:', addError);
-          toast.error('Failed to add Rootstock network');
+          console.error('Error adding local network:', addError);
+          toast.error('Failed to add local network');
         }
       } else {
-        console.error('Error switching to Rootstock:', switchError);
-        toast.error('Failed to switch to Rootstock network');
+        console.error('Error switching to local network:', switchError);
+        toast.error('Failed to switch to local network');
       }
     }
   };

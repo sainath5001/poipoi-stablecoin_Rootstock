@@ -22,7 +22,7 @@ const Mint = () => {
   const fetchGoldPrice = async () => {
     try {
       const managerContract = getContract('POIPOI_MANAGER', signer);
-      const price = await managerContract.getGoldPrice();
+      const price = await managerContract.getCurrentGoldPrice(); // Fixed: use correct method name
       setGoldPrice(formatTokenAmount(price, 8));
     } catch (error) {
       console.error('Error fetching gold price:', error);
@@ -37,7 +37,7 @@ const Mint = () => {
     try {
       const managerContract = getContract('POIPOI_MANAGER', signer);
       const usdAmountWei = parseTokenAmount(usdValue, 18);
-      const poiAmountWei = await managerContract.calculatePOIAmount(usdAmountWei);
+      const poiAmountWei = await managerContract.calculatePoiAmount(usdAmountWei); // Fixed: use correct method name
       setPoiAmount(formatTokenAmount(poiAmountWei));
     } catch (error) {
       console.error('Error calculating POI amount:', error);
