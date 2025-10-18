@@ -92,46 +92,6 @@ contract DeployPOIPOI is Script {
         console.log("POI Token Manager:", poiToken.getManager());
         console.log("Current Gold Price:", goldOracle.getGoldPricePerGram());
         console.log("Collateral Token Balance:", collateralToken.balanceOf(deployer) / 10 ** 18);
-
-        // Save deployment addresses
-        _saveDeploymentAddresses();
-    }
-
-    /**
-     * @dev Save deployment addresses to a file for reference
-     */
-    function _saveDeploymentAddresses() internal {
-        string memory deploymentInfo = string(
-            abi.encodePacked(
-                "POIPOI Deployment Information\n",
-                "============================\n",
-                "Deployment Time: ",
-                vm.toString(block.timestamp),
-                "\n",
-                "Network: Rootstock\n\n",
-                "Contract Addresses:\n",
-                "MockCollateralToken: ",
-                vm.toString(address(collateralToken)),
-                "\n",
-                "GoldPriceOracle: ",
-                vm.toString(address(goldOracle)),
-                "\n",
-                "POIPOI Token: ",
-                vm.toString(address(poiToken)),
-                "\n",
-                "POIPOIManager: ",
-                vm.toString(address(manager)),
-                "\n\n",
-                "Initial Configuration:\n",
-                "Gold Price: $65 per gram\n",
-                "Collateral Supply: 1,000,000 tokens\n",
-                "POI Decimals: 18\n",
-                "Gold Price Decimals: 8\n"
-            )
-        );
-
-        vm.writeFile("deployment-info.txt", deploymentInfo);
-        console.log("\nDeployment information saved to deployment-info.txt");
     }
 
     /**
