@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '../context/WalletContext';
 import { getContract, formatTokenAmount, formatUSD, formatPOI } from '../utils/contractConfig';
+import { fetchGoldPrice } from '../utils/goldPriceUtils';
 import DashboardCard from '../components/DashboardCard';
-import { TrendingUp, Coins, DollarSign, Activity, RefreshCw } from 'lucide-react';
+import { TrendingUp, Coins, DollarSign, Activity, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Dashboard = () => {
@@ -10,8 +11,10 @@ const Dashboard = () => {
   const [data, setData] = useState({
     poiBalance: '0',
     goldPrice: '0',
+    goldPriceSource: 'GoldPriceOracle',
     totalSupply: '0',
     networkStatus: 'Connected',
+    isPriceLive: false,
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -24,24 +27,26 @@ const Dashboard = () => {
 
     try {
       setRefreshing(true);
-      
+
       // Get contract instances
       const poiTokenContract = getContract('POIPOI', provider);
       const goldOracleContract = getContract('GOLD_PRICE_ORACLE', provider);
       const managerContract = getContract('POIPOI_MANAGER', provider);
 
-      // Fetch data in parallel
-      const [balance, goldPrice, totalSupply] = await Promise.all([
-        poiTokenContract.balanceOf(account),
-        goldOracleContract.getGoldPricePerGram(), // Fixed: use correct method name
-        poiTokenContract.totalSupply(), // Fixed: use POI token's totalSupply method
+      // Fetch data in parallel - use new fetchGoldPrice utility with fallback
+      const [balance, goldPriceData, totalSupply] = await Promise.all([
+        poiTokenContract.balanceOf(account).catch(() => 0n), // Return 0 if fails
+        fetchGoldPrice(provider, account).catch(() => ({ price: '0', source: 'Error', isStale: false })), // Return default if fails
+        poiTokenContract.totalSupply().catch(() => 0n), // Return 0 if fails
       ]);
 
       setData({
-        poiBalance: formatTokenAmount(balance),
-        goldPrice: formatUSD(formatTokenAmount(goldPrice, 8)), // Assuming 8 decimals for price
-        totalSupply: formatPOI(formatTokenAmount(totalSupply)),
+        poiBalance: formatTokenAmount(balance || 0n),
+        goldPrice: formatUSD(goldPriceData.price || '0'),
+        goldPriceSource: goldPriceData.source || 'Error',
+        totalSupply: formatPOI(formatTokenAmount(totalSupply || 0n)),
         networkStatus: 'Connected',
+        isPriceLive: !goldPriceData.isStale && goldPriceData.source && goldPriceData.source.includes('Live'),
       });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -58,10 +63,10 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchData();
-    
+
     // Set up polling for live updates
     const interval = setInterval(fetchData, 30000); // Update every 30 seconds
-    
+
     return () => clearInterval(interval);
   }, [account, provider, isConnected]);
 
@@ -128,7 +133,16 @@ const Dashboard = () => {
           <DashboardCard
             title="Gold Price"
             value={data.goldPrice}
-            subtitle="Per gram (USD)"
+            subtitle={
+              <div className="flex items-center gap-2">
+                <span>Per gram (USD)</span>
+                {data.isPriceLive ? (
+                  <Wifi className="h-3 w-3 text-green-400" title="Live via LayerZero" />
+                ) : (
+                  <WifiOff className="h-3 w-3 text-gray-500" title={data.goldPriceSource} />
+                )}
+              </div>
+            }
             icon={DollarSign}
             loading={loading}
           />

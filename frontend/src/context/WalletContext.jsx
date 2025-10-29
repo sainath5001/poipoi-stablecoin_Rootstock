@@ -69,10 +69,10 @@ export const WalletProvider = ({ children }) => {
       setChainId(Number(network.chainId));
       setIsConnected(true);
 
-      // Check if on correct network (allow local network for testing)
-      const allowedChainIds = [CHAIN_IDS.ROOTSTOCK, CHAIN_IDS.ROOTSTOCK_TESTNET, 31337]; // 31337 is local Anvil
+      // Check if on correct network (Rootstock Testnet)
+      const allowedChainIds = [CHAIN_IDS.ROOTSTOCK, CHAIN_IDS.ROOTSTOCK_TESTNET];
       if (!allowedChainIds.includes(Number(network.chainId))) {
-        toast.error('Please switch to Rootstock network or local network');
+        toast.error('Please switch to Rootstock Testnet');
         await switchToRootstock();
       }
 
@@ -87,38 +87,38 @@ export const WalletProvider = ({ children }) => {
 
   const switchToRootstock = async () => {
     try {
-      // Try to switch to local network first (for testing)
+      // Try to switch to Rootstock Testnet
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0x7A69' }], // 31337 in hex
+        params: [{ chainId: '0x1F' }], // 31 in hex (Rootstock Testnet)
       });
     } catch (switchError) {
-      // If local network doesn't exist, add it
+      // If network doesn't exist, add it
       if (switchError.code === 4902) {
         try {
           await window.ethereum.request({
             method: 'wallet_addEthereumChain',
             params: [
               {
-                chainId: '0x7A69', // 31337 in hex
-                chainName: 'Local Anvil',
-                rpcUrls: ['http://localhost:8545'],
+                chainId: '0x1F', // 31 in hex
+                chainName: 'Rootstock Testnet',
+                rpcUrls: ['https://public-node.testnet.rsk.co'],
                 nativeCurrency: {
-                  name: 'ETH',
-                  symbol: 'ETH',
+                  name: 'RBTC',
+                  symbol: 'tRBTC',
                   decimals: 18,
                 },
-                blockExplorerUrls: [],
+                blockExplorerUrls: ['https://explorer.testnet.rsk.co'],
               },
             ],
           });
         } catch (addError) {
-          console.error('Error adding local network:', addError);
-          toast.error('Failed to add local network');
+          console.error('Error adding Rootstock Testnet:', addError);
+          toast.error('Failed to add Rootstock Testnet');
         }
       } else {
-        console.error('Error switching to local network:', switchError);
-        toast.error('Failed to switch to local network');
+        console.error('Error switching to Rootstock Testnet:', switchError);
+        toast.error('Failed to switch to Rootstock Testnet');
       }
     }
   };

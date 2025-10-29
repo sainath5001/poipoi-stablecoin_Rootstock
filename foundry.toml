@@ -11,6 +11,14 @@ fuzz = { runs = 256 }
 invariant = { runs = 256, depth = 15, fail_on_revert = false, call_override = false }
 fs_permissions = [{ access = "read", path = "./" }]
 
+# Remappings
+remappings = [
+    "@openzeppelin/=lib/openzeppelin-contracts/",
+    "@layerzero/=lib/layerzero-contracts/",
+    "forge-std/=lib/forge-std/src/",
+    "@test/=test/"
+]
+
 # Rootstock network configuration
 [rpc_endpoints]
 rootstock_mainnet = "https://public-node.rsk.co"
